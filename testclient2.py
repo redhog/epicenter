@@ -16,7 +16,7 @@ storage = dbus.Interface(
 
 query = dbus.Interface(
     bus.get_object('org.redhog.epicenter',
-                   storage.query(["foo", "bar"], ["fie"])),
+                   storage.query(dbus.Array([], "s"), dbus.Array([], "s"))),
     dbus_interface='org.redhog.epicenter.query')
 
 query.insert_message((sys.argv[:-1], [{"content": sys.argv[-1]}]))

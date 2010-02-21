@@ -13,13 +13,16 @@ storage = dbus.Interface(
 
 query = dbus.Interface(
     bus.get_object('org.redhog.epicenter',
-                   storage.query(["foo", "bar"], ["fie"])),
+                   storage.query(["foo1"], ["bar1"])),
     dbus_interface='org.redhog.epicenter.query')
 
 def message_arrived(message):
-    print "Received:", message
+    print message
 
 query.connect_to_signal("message_arrived", message_arrived)
+
+for m in query.get_messages():
+    print m
 
 print "Looping"
 loop = gobject.MainLoop()

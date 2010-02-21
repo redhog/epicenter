@@ -43,14 +43,14 @@ class Query(DBus.ServiceObject):
     @DBus.ServiceObject.service_method(
         dbus_interface='org.redhog.epicenter.query',
         in_signature='xx', out_signature='i')
-    def get_nr_messages(self, start_date, end_date):
+    def get_nr_messages(self, start_date = -1, end_date = -1):
         pass
 
     @DBus.ServiceObject.service_method(
         dbus_interface='org.redhog.epicenter.query',
-        in_signature='xxxx', out_signature=messages_signature)
-    def get_messages(self, start_date, end_date, start_pos, end_pos):
-        pass
+        in_signature='ixxxx', out_signature=messages_signature)
+    def get_messages(self, original = 1, start_time = -1, end_time = -1, start_pos = -1, end_pos = -1):
+        return self.storage._dbconn.get_messages(1, *self.storage._dbconn._limit_to_sql(start_pos, end_pos, *self._get_query_sql(start_time, end_time)))
 
     @DBus.ServiceObject.service_method(
         dbus_interface='org.redhog.epicenter.query',
@@ -73,9 +73,7 @@ class Query(DBus.ServiceObject):
             return
         self.message_arrived(message)
 
-    def _get_query_sql(self):
-
-
-
-        self.tags
-        self.anti_tags
+    def _get_query_sql(self, start_time = -1, end_time = -1):
+        return self.storage._dbconn._query_to_sql(
+            self.tags, self.anti_tags, 1,
+            *self.storage._dbconn._date_to_sql(start_time, end_time, query_object_table = 'message'))

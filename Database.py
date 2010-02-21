@@ -39,18 +39,41 @@ class Database(object):
         self.dbconn.commit()
 
     @classmethod
-    def _date_to_sql(cls, start_time = 0, end_time = 0, query_object_table = 'object', query_object_params = []):
-        if start_time == 0 and end_time == 0:
+    def _limit_to_sql(cls, start_pos = -1, end_pos = -1, query_object_table = 'object', query_object_params = []):
+        if start_pos == -1 and end_pos == -1:
+            return query_object_table, query_object_params
+        if start_pos == -1 or end_pos == -1:
+                raise Execption("Either both start and end position must be given, or neither")
+
+        info = {'query_object_table': query_object_table}
+
+        info['limit'] = end_pos - start_pos
+        info['offset'] = start_pos
+        
+        return """
+         (select
+           p.%(post_table_id)s
+          from
+           %(query_object_table)s as q       
+           join message as m on
+            q.object_id = m.object_id
+          limit %(limit)s offset %(offset)s
+         )
+        """ % info, query_object_params + params
+
+    @classmethod
+    def _date_to_sql(cls, start_time = -1, end_time = -1, query_object_table = 'object', query_object_params = []):
+        if start_time == -1 and end_time == -1:
             return query_object_table, query_object_params
 
         info = {'query_object_table': query_object_table}
 
         info['cmps'] = []
         params = []
-        if start_time != 0:
+        if start_time != -1:
             info['cmps'].append("m.time >= %s")
             params.append(start_time)
-        if end_time != 0:
+        if end_time != -1:
             info['cmps'].append("m.time <= %s")
             params.append(end_time)
         info['cmps'] = ' and '.join(info['cmps'])
@@ -90,7 +113,7 @@ class Database(object):
                and t%(n)s.name = ?
                and ot%(n)s.original = ?
                """ % info)
-            except_param_array.append(tag[1:])
+            except_param_array.append(tag)
             except_param_array.append(original)
             info["n"] += 1
         for tag in tags:
@@ -119,7 +142,7 @@ class Database(object):
          )
         """ % info, query_object_params + join_param_array + except_param_array
 
-    def get_messages(self, sql, params):
+    def get_messages(self, original, sql, params):
         cur = self.dbconn.cursor()
         sql = """
          select
@@ -131,6 +154,7 @@ class Database(object):
             tagging as mt
             join tag as t on
              m.object_id = mt.object_id
+             and mt.original = ?
              and mt.has_tag_id = t.object_id) as tags
          from
           %s as q
@@ -144,8 +168,8 @@ class Database(object):
           kv.message_part_id,
           kv.key
         """  % (sql,)
-        
-        cur.execute(sql, params)
+
+        cur.execute(sql, [original] + params)
         names = [dsc[0] for dsc in cur.description]
 
         res = []
@@ -186,5 +210,5 @@ if __name__ == "__main__":
 
     db = Database()
 
-    for m in db.get_messages(*db._query_to_sql(["foo"], [], 1, "message")):
+    for m in db.get_messages(1, *db._query_to_sql([], ["foo1"], 1, "message")):
         print m
