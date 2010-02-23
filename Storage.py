@@ -11,9 +11,9 @@ class Storage(DBus.ServiceObject):
 
     @DBus.ServiceObject.service_method(
         dbus_interface='org.redhog.epicenter.storage',
-        in_signature='asas', out_signature='o')
-    def query(self, tags, anti_tags):
-        query = self.make_object_temporary(Query.Query(self, tags, anti_tags))
+        in_signature='asasb', out_signature='o')
+    def query(self, tags, anti_tags, original = 0):
+        query = self.make_object_temporary(Query.Query(self, tags, anti_tags, original))
         self._queries[query] = 1
         return query
 
